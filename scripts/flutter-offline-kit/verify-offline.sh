@@ -14,5 +14,6 @@ cp -a "$PREFIX/offline_starter" "$WORK/app"
 cd "$WORK/app"
 flutter pub get --offline
 rm -rf build
+mkdir -p build/native_assets/linux
 flutter build linux --release --no-pub
 printf 'Offline Flutter Linux release build succeeded.\n'
