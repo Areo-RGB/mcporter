@@ -174,19 +174,19 @@ jobs:
             deepwiki-cli/deepwiki.bundle.js \
             deepwiki-cli/deepwiki.ts \
             > deepwiki-cli/SHA256SUMS
-          cat > deepwiki-cli/README.txt <<'EOF'
-DeepWiki CLI generated from https://mcp.deepwiki.com/mcp
-
-Commands:
-  deepwiki read_wiki_structure --repo-name owner/repo
-  deepwiki read_wiki_contents --repo-name owner/repo
-  deepwiki ask_question --repo-name owner/repo --question "How does it work?"
-
-Global output formats:
-  --output text|markdown|json|raw
-
-No authentication is required for public repositories.
-EOF
+          printf '%s\n' \
+            'DeepWiki CLI generated from https://mcp.deepwiki.com/mcp' \
+            '' \
+            'Commands:' \
+            '  deepwiki read_wiki_structure --repo-name owner/repo' \
+            '  deepwiki read_wiki_contents --repo-name owner/repo' \
+            '  deepwiki ask_question --repo-name owner/repo --question "How does it work?"' \
+            '' \
+            'Global output formats:' \
+            '  --output text|markdown|json|raw' \
+            '' \
+            'No authentication is required for public repositories.' \
+            > deepwiki-cli/README.txt
 
       - name: Upload DeepWiki CLI
         uses: actions/upload-artifact@v6
