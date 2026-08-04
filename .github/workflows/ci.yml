@@ -38,3 +38,109 @@ jobs:
           path: flutter-build.log
           retention-days: 1
           if-no-files-found: error
+
+      - name: Upload metadata and reports
+        uses: actions/upload-artifact@v6
+        with:
+          name: flutter-offline-kit-meta
+          path: |
+            flutter-offline-output/flutter-offline-kit-meta.tar.zst
+            flutter-offline-output/FLUTTER_VERSION.txt
+            flutter-offline-output/FLUTTER_DOCTOR.txt
+            flutter-offline-output/OFFLINE_VERIFICATION.txt
+            flutter-offline-output/DEBIAN13_INSTALLED_PACKAGE_MANIFEST.tsv
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Upload pub cache
+        uses: actions/upload-artifact@v6
+        with:
+          name: flutter-pub-cache-part-000
+          path: flutter-offline-output/flutter-pub-cache-3.44.8-desktop.tar.zst.part-000
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Upload Debian native dependencies
+        uses: actions/upload-artifact@v6
+        with:
+          name: flutter-native-debs-part-000
+          path: flutter-offline-output/flutter-native-debs-debian13-amd64.tar.zst.part-000
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Upload samples
+        uses: actions/upload-artifact@v6
+        with:
+          name: flutter-samples-part-000
+          path: flutter-offline-output/flutter-desktop-samples-3.44.8.tar.zst.part-000
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Upload SDK part 000
+        uses: actions/upload-artifact@v6
+        with:
+          name: flutter-sdk-part-000
+          path: flutter-offline-output/flutter-sdk-3.44.8-linux-x64-debian13.tar.zst.part-000
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+      - name: Upload SDK part 001
+        uses: actions/upload-artifact@v6
+        with:
+          name: flutter-sdk-part-001
+          path: flutter-offline-output/flutter-sdk-3.44.8-linux-x64-debian13.tar.zst.part-001
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+      - name: Upload SDK part 002
+        uses: actions/upload-artifact@v6
+        with:
+          name: flutter-sdk-part-002
+          path: flutter-offline-output/flutter-sdk-3.44.8-linux-x64-debian13.tar.zst.part-002
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+      - name: Upload SDK part 003
+        uses: actions/upload-artifact@v6
+        with:
+          name: flutter-sdk-part-003
+          path: flutter-offline-output/flutter-sdk-3.44.8-linux-x64-debian13.tar.zst.part-003
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+      - name: Upload SDK part 004
+        uses: actions/upload-artifact@v6
+        with:
+          name: flutter-sdk-part-004
+          path: flutter-offline-output/flutter-sdk-3.44.8-linux-x64-debian13.tar.zst.part-004
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+      - name: Upload SDK part 005
+        uses: actions/upload-artifact@v6
+        with:
+          name: flutter-sdk-part-005
+          path: flutter-offline-output/flutter-sdk-3.44.8-linux-x64-debian13.tar.zst.part-005
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+      - name: Upload SDK part 006
+        uses: actions/upload-artifact@v6
+        with:
+          name: flutter-sdk-part-006
+          path: flutter-offline-output/flutter-sdk-3.44.8-linux-x64-debian13.tar.zst.part-006
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+      - name: Upload SDK part 007
+        uses: actions/upload-artifact@v6
+        with:
+          name: flutter-sdk-part-007
+          path: flutter-offline-output/flutter-sdk-3.44.8-linux-x64-debian13.tar.zst.part-007
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
