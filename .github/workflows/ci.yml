@@ -9,138 +9,28 @@ permissions:
   contents: read
 
 jobs:
-  flutter-offline-kit:
-    name: Flutter offline desktop kit (Debian 13 x64)
+  runtime-debs:
+    name: Debian 13 runtime compatibility packages
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
-
-      - name: Free runner disk space
+      - name: Fetch pinned runtime packages
         shell: bash
         run: |
-          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc || true
-          docker system prune --all --force || true
-          df -h
+          set -euo pipefail
+          mkdir runtime-debs
+          cd runtime-debs
+          curl --fail --location --retry 5 -O 'https://ftp.debian.org/debian/pool/main/g/glibc/libc6_2.41-12%2Bdeb13u3_amd64.deb'
+          curl --fail --location --retry 5 -O 'https://ftp.debian.org/debian/pool/main/g/glibc/libc-bin_2.41-12%2Bdeb13u3_amd64.deb'
+          curl --fail --location --retry 5 -O 'https://ftp.debian.org/debian/pool/main/s/systemd/libsystemd0_257.13-1~deb13u1_amd64.deb'
+          curl --fail --location --retry 5 -O 'https://ftp.debian.org/debian/pool/main/x/xz-utils/liblzma5_5.8.1-1%2Bdeb13u1_amd64.deb'
+          curl --fail --location --retry 5 -O 'https://ftp.debian.org/debian/pool/main/libc/libcap2/libcap2_2.75-10%2Bdeb13u1%2Bb1_amd64.deb'
+          for file in *.deb; do dpkg-deb --info "$file" | sed -n '1,20p'; done
+          sha256sum *.deb > SHA256SUMS
 
-      - name: Build and verify offline kit
-        shell: bash
-        run: |
-          set -o pipefail
-          chmod +x scripts/chatgpt-build-flutter-offline-kit.sh
-          ./scripts/chatgpt-build-flutter-offline-kit.sh flutter-offline-output 2>&1 | tee flutter-build.log
-
-      - name: Upload build log
-        if: always()
-        uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v6
         with:
-          name: flutter-build-log
-          path: flutter-build.log
-          retention-days: 1
-          if-no-files-found: error
-
-      - name: Upload metadata and reports
-        uses: actions/upload-artifact@v6
-        with:
-          name: flutter-offline-kit-meta
-          path: |
-            flutter-offline-output/flutter-offline-kit-meta.tar.zst
-            flutter-offline-output/FLUTTER_VERSION.txt
-            flutter-offline-output/FLUTTER_DOCTOR.txt
-            flutter-offline-output/OFFLINE_VERIFICATION.txt
-            flutter-offline-output/DEBIAN13_INSTALLED_PACKAGE_MANIFEST.tsv
-          compression-level: 0
-          retention-days: 1
-          if-no-files-found: error
-
-      - name: Upload pub cache
-        uses: actions/upload-artifact@v6
-        with:
-          name: flutter-pub-cache-part-000
-          path: flutter-offline-output/flutter-pub-cache-3.44.8-desktop.tar.zst.part-000
-          compression-level: 0
-          retention-days: 1
-          if-no-files-found: error
-
-      - name: Upload Debian native dependencies
-        uses: actions/upload-artifact@v6
-        with:
-          name: flutter-native-debs-part-000
-          path: flutter-offline-output/flutter-native-debs-debian13-amd64.tar.zst.part-000
-          compression-level: 0
-          retention-days: 1
-          if-no-files-found: error
-
-      - name: Upload samples
-        uses: actions/upload-artifact@v6
-        with:
-          name: flutter-samples-part-000
-          path: flutter-offline-output/flutter-desktop-samples-3.44.8.tar.zst.part-000
-          compression-level: 0
-          retention-days: 1
-          if-no-files-found: error
-
-      - name: Upload SDK part 000
-        uses: actions/upload-artifact@v6
-        with:
-          name: flutter-sdk-part-000
-          path: flutter-offline-output/flutter-sdk-3.44.8-linux-x64-debian13.tar.zst.part-000
-          compression-level: 0
-          retention-days: 1
-          if-no-files-found: error
-      - name: Upload SDK part 001
-        uses: actions/upload-artifact@v6
-        with:
-          name: flutter-sdk-part-001
-          path: flutter-offline-output/flutter-sdk-3.44.8-linux-x64-debian13.tar.zst.part-001
-          compression-level: 0
-          retention-days: 1
-          if-no-files-found: error
-      - name: Upload SDK part 002
-        uses: actions/upload-artifact@v6
-        with:
-          name: flutter-sdk-part-002
-          path: flutter-offline-output/flutter-sdk-3.44.8-linux-x64-debian13.tar.zst.part-002
-          compression-level: 0
-          retention-days: 1
-          if-no-files-found: error
-      - name: Upload SDK part 003
-        uses: actions/upload-artifact@v6
-        with:
-          name: flutter-sdk-part-003
-          path: flutter-offline-output/flutter-sdk-3.44.8-linux-x64-debian13.tar.zst.part-003
-          compression-level: 0
-          retention-days: 1
-          if-no-files-found: error
-      - name: Upload SDK part 004
-        uses: actions/upload-artifact@v6
-        with:
-          name: flutter-sdk-part-004
-          path: flutter-offline-output/flutter-sdk-3.44.8-linux-x64-debian13.tar.zst.part-004
-          compression-level: 0
-          retention-days: 1
-          if-no-files-found: error
-      - name: Upload SDK part 005
-        uses: actions/upload-artifact@v6
-        with:
-          name: flutter-sdk-part-005
-          path: flutter-offline-output/flutter-sdk-3.44.8-linux-x64-debian13.tar.zst.part-005
-          compression-level: 0
-          retention-days: 1
-          if-no-files-found: error
-      - name: Upload SDK part 006
-        uses: actions/upload-artifact@v6
-        with:
-          name: flutter-sdk-part-006
-          path: flutter-offline-output/flutter-sdk-3.44.8-linux-x64-debian13.tar.zst.part-006
-          compression-level: 0
-          retention-days: 1
-          if-no-files-found: error
-      - name: Upload SDK part 007
-        uses: actions/upload-artifact@v6
-        with:
-          name: flutter-sdk-part-007
-          path: flutter-offline-output/flutter-sdk-3.44.8-linux-x64-debian13.tar.zst.part-007
-          compression-level: 0
+          name: flutter-debian13-runtime-debs
+          path: runtime-debs/
           retention-days: 1
           if-no-files-found: error
