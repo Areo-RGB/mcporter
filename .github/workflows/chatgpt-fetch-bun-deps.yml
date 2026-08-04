@@ -1,0 +1,68 @@
+name: Fetch Bun Build Dependencies
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fetch-deps:
+    name: Fetch Linux x64 dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Activate pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@10.33.2 --activate
+          pnpm --version
+
+      - name: Install frozen dependency graph
+        run: pnpm install --frozen-lockfile
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Verify and compile
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun --version
+          pnpm build:bun -- --target bun-linux-x64-baseline --output "$PWD/mcporter-linux-x64-baseline"
+          ./mcporter-linux-x64-baseline --version
+
+      - name: Package fetched dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p fetched-deps
+          cp "$(command -v bun)" fetched-deps/bun
+          chmod 0755 fetched-deps/bun
+          cp package.json pnpm-lock.yaml fetched-deps/
+          tar -czf fetched-deps/node_modules-linux-x64.tar.gz node_modules
+          cp mcporter-linux-x64-baseline fetched-deps/
+          sha256sum \
+            fetched-deps/bun \
+            fetched-deps/node_modules-linux-x64.tar.gz \
+            fetched-deps/mcporter-linux-x64-baseline \
+            > fetched-deps/SHA256SUMS
+          ls -lh fetched-deps
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: mcporter-linux-x64-deps
+          path: fetched-deps/
+          retention-days: 1
+          if-no-files-found: error
