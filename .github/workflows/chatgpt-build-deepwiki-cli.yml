@@ -1,0 +1,96 @@
+name: Build DeepWiki CLI
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Generate and compile DeepWiki CLI
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Activate pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@10.33.2 --activate
+          pnpm --version
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Generate dedicated CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p deepwiki-cli
+          DEFINITION='{"name":"deepwiki","description":"CLI for DeepWiki public repository documentation and question answering","command":"https://mcp.deepwiki.com/mcp"}'
+          pnpm exec tsx src/cli.ts generate-cli \
+            --server "$DEFINITION" \
+            --output deepwiki-cli/deepwiki.ts \
+            --bundle deepwiki-cli/deepwiki.bundle.js \
+            --compile deepwiki-cli/deepwiki-linux-x64 \
+            --runtime bun \
+            --bundler bun \
+            --timeout 120000 \
+            --minify
+          bun build deepwiki-cli/deepwiki.bundle.js \
+            --compile \
+            --target bun-linux-x64-baseline \
+            --outfile deepwiki-cli/deepwiki-linux-x64-baseline
+          chmod 0755 deepwiki-cli/deepwiki-linux-x64 deepwiki-cli/deepwiki-linux-x64-baseline
+
+      - name: Verify generated CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          bun --version | tee deepwiki-cli/BUN_VERSION
+          ./deepwiki-cli/deepwiki-linux-x64 --help | tee deepwiki-cli/HELP.txt
+          ./deepwiki-cli/deepwiki-linux-x64 read_wiki_structure \
+            --repo-name openclaw/mcporter \
+            --output json \
+            | tee deepwiki-cli/SMOKE_TEST.json
+          ./deepwiki-cli/deepwiki-linux-x64-baseline --help >/dev/null
+          sha256sum \
+            deepwiki-cli/deepwiki-linux-x64 \
+            deepwiki-cli/deepwiki-linux-x64-baseline \
+            deepwiki-cli/deepwiki.bundle.js \
+            deepwiki-cli/deepwiki.ts \
+            > deepwiki-cli/SHA256SUMS
+          cat > deepwiki-cli/README.txt <<'EOF'
+DeepWiki CLI generated from https://mcp.deepwiki.com/mcp
+
+Commands:
+  deepwiki read_wiki_structure --repo-name owner/repo
+  deepwiki read_wiki_contents --repo-name owner/repo
+  deepwiki ask_question --repo-name owner/repo --question "How does it work?"
+
+Global output formats:
+  --output text|markdown|json|raw
+
+No authentication is required for public repositories.
+EOF
+          ls -lh deepwiki-cli
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: deepwiki-cli-linux-x64
+          path: deepwiki-cli/
+          retention-days: 1
+          if-no-files-found: error
