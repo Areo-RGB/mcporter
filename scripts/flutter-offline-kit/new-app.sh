@@ -9,5 +9,7 @@ flutter create --platforms=linux --no-pub --project-name "$NAME" "$DEST"
 (
   cd "$DEST"
   flutter pub get --offline
+  mkdir -p build/native_assets/linux
 )
 printf 'Created offline Linux desktop app: %s\n' "$DEST"
+printf 'Build with: cd %q && flutter build linux --release --no-pub\n' "$DEST"
