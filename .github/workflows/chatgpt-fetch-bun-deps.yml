@@ -1,3 +1,4 @@
+# Temporary artifact-generation workflow; do not merge.
 name: Fetch Bun Build Dependencies
 
 on:
