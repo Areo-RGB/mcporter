@@ -48,12 +48,14 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p fetched-deps
+          corepack pack pnpm@10.33.2 -o fetched-deps/pnpm-10.33.2.tgz
           cp "$(command -v bun)" fetched-deps/bun
           chmod 0755 fetched-deps/bun
           cp package.json pnpm-lock.yaml fetched-deps/
           tar -czf fetched-deps/node_modules-linux-x64.tar.gz node_modules
           cp mcporter-linux-x64-baseline fetched-deps/
           sha256sum \
+            fetched-deps/pnpm-10.33.2.tgz \
             fetched-deps/bun \
             fetched-deps/node_modules-linux-x64.tar.gz \
             fetched-deps/mcporter-linux-x64-baseline \
