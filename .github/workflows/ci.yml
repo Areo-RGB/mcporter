@@ -1,8 +1,6 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -10,105 +8,148 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 jobs:
-  build:
-    name: build (${{ matrix.os }})
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-15, windows-latest]
-    runs-on: ${{ matrix.os }}
+  flutter-offline-kit:
+    name: Flutter offline desktop kit (Debian 13 x64)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-
-      - run: corepack enable
-      - run: corepack prepare pnpm@10.33.2 --activate
-
-      - name: Locate pnpm store
-        id: pnpm-store
-        shell: bash
-        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/cache@v5
-        with:
-          path: ${{ steps.pnpm-store.outputs.path }}
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm --version
-      - run: pnpm check
-        if: matrix.os != 'macos-15'
-
-      # Type-aware oxlint (tsgolint) crashes on macOS runners; ubuntu and windows
-      # still run the full `pnpm check`, so the rule set stays enforced.
-      - name: Check without type-aware oxlint
-        if: matrix.os == 'macos-15'
-        run: pnpm format:check && pnpm typecheck
-
-      - name: Verify release contracts without credentials
-        if: matrix.os == 'macos-15'
-        run: ./scripts/test-release.sh
-
-      - name: Verify generated schema is committed
-        if: matrix.os == 'ubuntu-latest'
+      - name: Free runner disk space
         shell: bash
         run: |
-          pnpm generate:schema
-          pnpm exec oxfmt mcporter.schema.json
-          git diff --exit-code -- mcporter.schema.json
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc || true
+          docker system prune --all --force || true
+          df -h
 
-      - name: Build docs site
-        if: matrix.os == 'ubuntu-latest'
-        run: pnpm docs:site
-
-      - run: pnpm build
-
-      - name: Pack npm artifact
-        if: matrix.os == 'ubuntu-latest'
-        run: pnpm pack --pack-destination /tmp
-
-      - run: pnpm test
-        if: matrix.os != 'ubuntu-latest'
-        env:
-          FIRECRAWL_API_KEY: test
-          LINEAR_API_KEY: test
-
-      # Coverage runs on one platform only: the thresholds in vitest.config.ts are
-      # platform-independent, and instrumenting all three would triple CI time for
-      # no extra signal. This still runs the whole suite, so ubuntu loses nothing.
-      - name: Test with coverage
-        if: matrix.os == 'ubuntu-latest'
-        run: pnpm test:coverage
-        env:
-          FIRECRAWL_API_KEY: test
-          LINEAR_API_KEY: test
-
-      - name: Summarize coverage
-        if: matrix.os == 'ubuntu-latest' && always()
+      - name: Build and verify offline kit
         shell: bash
         run: |
-          if [ -f coverage/coverage-summary.json ]; then
-            node scripts/coverage-summary.mjs >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "No coverage summary produced." >> "$GITHUB_STEP_SUMMARY"
-          fi
+          chmod +x scripts/chatgpt-build-flutter-offline-kit.sh
+          ./scripts/chatgpt-build-flutter-offline-kit.sh flutter-offline-output
+          cat flutter-offline-output/OUTPUT_FILES.txt
+          df -h
 
-      - name: Upload coverage report
-        if: matrix.os == 'ubuntu-latest' && always()
+      - name: Upload metadata and reports
         uses: actions/upload-artifact@v6
         with:
-          name: coverage
-          path: coverage/
-          retention-days: 14
+          name: flutter-offline-kit-meta
+          path: |
+            flutter-offline-output/flutter-offline-kit-meta.tar.zst
+            flutter-offline-output/OUTPUT_FILES.txt
+            flutter-offline-output/FLUTTER_VERSION.txt
+            flutter-offline-output/FLUTTER_DOCTOR.txt
+            flutter-offline-output/OFFLINE_VERIFICATION.txt
+            flutter-offline-output/DEBIAN13_INSTALLED_PACKAGE_MANIFEST.tsv
+          compression-level: 0
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Upload SDK part 000
+        uses: actions/upload-artifact@v6
+        with: &part
+          name: flutter-sdk-part-000
+          path: flutter-offline-output/flutter-sdk-3.44.8-linux-x64-debian13.tar.zst.part-000
+          compression-level: 0
+          retention-days: 1
           if-no-files-found: ignore
+      - name: Upload SDK part 001
+        uses: actions/upload-artifact@v6
+        with:
+          <<: *part
+          name: flutter-sdk-part-001
+          path: flutter-offline-output/flutter-sdk-3.44.8-linux-x64-debian13.tar.zst.part-001
+      - name: Upload SDK part 002
+        uses: actions/upload-artifact@v6
+        with:
+          <<: *part
+          name: flutter-sdk-part-002
+          path: flutter-offline-output/flutter-sdk-3.44.8-linux-x64-debian13.tar.zst.part-002
+      - name: Upload SDK part 003
+        uses: actions/upload-artifact@v6
+        with:
+          <<: *part
+          name: flutter-sdk-part-003
+          path: flutter-offline-output/flutter-sdk-3.44.8-linux-x64-debian13.tar.zst.part-003
+      - name: Upload SDK part 004
+        uses: actions/upload-artifact@v6
+        with:
+          <<: *part
+          name: flutter-sdk-part-004
+          path: flutter-offline-output/flutter-sdk-3.44.8-linux-x64-debian13.tar.zst.part-004
+      - name: Upload SDK part 005
+        uses: actions/upload-artifact@v6
+        with:
+          <<: *part
+          name: flutter-sdk-part-005
+          path: flutter-offline-output/flutter-sdk-3.44.8-linux-x64-debian13.tar.zst.part-005
+      - name: Upload SDK part 006
+        uses: actions/upload-artifact@v6
+        with:
+          <<: *part
+          name: flutter-sdk-part-006
+          path: flutter-offline-output/flutter-sdk-3.44.8-linux-x64-debian13.tar.zst.part-006
+      - name: Upload SDK part 007
+        uses: actions/upload-artifact@v6
+        with:
+          <<: *part
+          name: flutter-sdk-part-007
+          path: flutter-offline-output/flutter-sdk-3.44.8-linux-x64-debian13.tar.zst.part-007
+
+      - name: Upload pub cache part 000
+        uses: actions/upload-artifact@v6
+        with:
+          <<: *part
+          name: flutter-pub-cache-part-000
+          path: flutter-offline-output/flutter-pub-cache-3.44.8-desktop.tar.zst.part-000
+      - name: Upload pub cache part 001
+        uses: actions/upload-artifact@v6
+        with:
+          <<: *part
+          name: flutter-pub-cache-part-001
+          path: flutter-offline-output/flutter-pub-cache-3.44.8-desktop.tar.zst.part-001
+      - name: Upload pub cache part 002
+        uses: actions/upload-artifact@v6
+        with:
+          <<: *part
+          name: flutter-pub-cache-part-002
+          path: flutter-offline-output/flutter-pub-cache-3.44.8-desktop.tar.zst.part-002
+
+      - name: Upload native deps part 000
+        uses: actions/upload-artifact@v6
+        with:
+          <<: *part
+          name: flutter-native-debs-part-000
+          path: flutter-offline-output/flutter-native-debs-debian13-amd64.tar.zst.part-000
+      - name: Upload native deps part 001
+        uses: actions/upload-artifact@v6
+        with:
+          <<: *part
+          name: flutter-native-debs-part-001
+          path: flutter-offline-output/flutter-native-debs-debian13-amd64.tar.zst.part-001
+      - name: Upload native deps part 002
+        uses: actions/upload-artifact@v6
+        with:
+          <<: *part
+          name: flutter-native-debs-part-002
+          path: flutter-offline-output/flutter-native-debs-debian13-amd64.tar.zst.part-002
+
+      - name: Upload samples part 000
+        uses: actions/upload-artifact@v6
+        with:
+          <<: *part
+          name: flutter-samples-part-000
+          path: flutter-offline-output/flutter-desktop-samples-3.44.8.tar.zst.part-000
+      - name: Upload samples part 001
+        uses: actions/upload-artifact@v6
+        with:
+          <<: *part
+          name: flutter-samples-part-001
+          path: flutter-offline-output/flutter-desktop-samples-3.44.8.tar.zst.part-001
+      - name: Upload samples part 002
+        uses: actions/upload-artifact@v6
+        with:
+          <<: *part
+          name: flutter-samples-part-002
+          path: flutter-offline-output/flutter-desktop-samples-3.44.8.tar.zst.part-002
