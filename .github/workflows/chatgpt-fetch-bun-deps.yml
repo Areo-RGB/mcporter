@@ -53,11 +53,15 @@ jobs:
           chmod 0755 fetched-deps/bun
           cp package.json pnpm-lock.yaml fetched-deps/
           tar -czf fetched-deps/node_modules-linux-x64.tar.gz node_modules
+          store_path="$(pnpm store path --silent)"
+          printf '%s\n' "$store_path" > fetched-deps/PNPM_STORE_SOURCE_PATH.txt
+          tar -czf fetched-deps/pnpm-store-linux-x64.tar.gz -C "$store_path" .
           cp mcporter-linux-x64-baseline fetched-deps/
           sha256sum \
             fetched-deps/pnpm-10.33.2.tgz \
             fetched-deps/bun \
             fetched-deps/node_modules-linux-x64.tar.gz \
+            fetched-deps/pnpm-store-linux-x64.tar.gz \
             fetched-deps/mcporter-linux-x64-baseline \
             > fetched-deps/SHA256SUMS
           ls -lh fetched-deps
