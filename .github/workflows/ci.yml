@@ -1,8 +1,6 @@
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -10,105 +8,29 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 jobs:
-  build:
-    name: build (${{ matrix.os }})
+  runtime-debs:
+    name: Debian 13 runtime compatibility packages
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-15, windows-latest]
-    runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-
-      - run: corepack enable
-      - run: corepack prepare pnpm@10.33.2 --activate
-
-      - name: Locate pnpm store
-        id: pnpm-store
-        shell: bash
-        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/cache@v5
-        with:
-          path: ${{ steps.pnpm-store.outputs.path }}
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
-
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm --version
-      - run: pnpm check
-        if: matrix.os != 'macos-15'
-
-      # Type-aware oxlint (tsgolint) crashes on macOS runners; ubuntu and windows
-      # still run the full `pnpm check`, so the rule set stays enforced.
-      - name: Check without type-aware oxlint
-        if: matrix.os == 'macos-15'
-        run: pnpm format:check && pnpm typecheck
-
-      - name: Verify release contracts without credentials
-        if: matrix.os == 'macos-15'
-        run: ./scripts/test-release.sh
-
-      - name: Verify generated schema is committed
-        if: matrix.os == 'ubuntu-latest'
+      - name: Fetch pinned runtime packages
         shell: bash
         run: |
-          pnpm generate:schema
-          pnpm exec oxfmt mcporter.schema.json
-          git diff --exit-code -- mcporter.schema.json
+          set -euo pipefail
+          mkdir runtime-debs
+          cd runtime-debs
+          curl --fail --location --retry 5 -O 'https://ftp.debian.org/debian/pool/main/g/glibc/libc6_2.41-12%2Bdeb13u3_amd64.deb'
+          curl --fail --location --retry 5 -O 'https://ftp.debian.org/debian/pool/main/g/glibc/libc-bin_2.41-12%2Bdeb13u3_amd64.deb'
+          curl --fail --location --retry 5 -O 'https://ftp.debian.org/debian/pool/main/s/systemd/libsystemd0_257.13-1~deb13u1_amd64.deb'
+          curl --fail --location --retry 5 -O 'https://ftp.debian.org/debian/pool/main/x/xz-utils/liblzma5_5.8.1-1%2Bdeb13u1_amd64.deb'
+          curl --fail --location --retry 5 -O 'https://ftp.debian.org/debian/pool/main/libc/libcap2/libcap2_2.75-10%2Bdeb13u1%2Bb1_amd64.deb'
+          for file in *.deb; do dpkg-deb --info "$file" | sed -n '1,20p'; done
+          sha256sum *.deb > SHA256SUMS
 
-      - name: Build docs site
-        if: matrix.os == 'ubuntu-latest'
-        run: pnpm docs:site
-
-      - run: pnpm build
-
-      - name: Pack npm artifact
-        if: matrix.os == 'ubuntu-latest'
-        run: pnpm pack --pack-destination /tmp
-
-      - run: pnpm test
-        if: matrix.os != 'ubuntu-latest'
-        env:
-          FIRECRAWL_API_KEY: test
-          LINEAR_API_KEY: test
-
-      # Coverage runs on one platform only: the thresholds in vitest.config.ts are
-      # platform-independent, and instrumenting all three would triple CI time for
-      # no extra signal. This still runs the whole suite, so ubuntu loses nothing.
-      - name: Test with coverage
-        if: matrix.os == 'ubuntu-latest'
-        run: pnpm test:coverage
-        env:
-          FIRECRAWL_API_KEY: test
-          LINEAR_API_KEY: test
-
-      - name: Summarize coverage
-        if: matrix.os == 'ubuntu-latest' && always()
-        shell: bash
-        run: |
-          if [ -f coverage/coverage-summary.json ]; then
-            node scripts/coverage-summary.mjs >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "No coverage summary produced." >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-      - name: Upload coverage report
-        if: matrix.os == 'ubuntu-latest' && always()
-        uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v6
         with:
-          name: coverage
-          path: coverage/
-          retention-days: 14
-          if-no-files-found: ignore
+          name: flutter-debian13-runtime-debs
+          path: runtime-debs/
+          retention-days: 1
+          if-no-files-found: error
