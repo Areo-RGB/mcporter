@@ -13,7 +13,7 @@ FLUTTER_SHA256="672089e001571a9fbb209a495c583580c0c6c73ef98999264ba07fa93ace332d
 
 export FLUTTER_VERSION DART_VERSION FLUTTER_ARCHIVE FLUTTER_URL FLUTTER_SHA256
 
-docker run --rm --platform linux/amd64 \
+docker run --rm -i --platform linux/amd64 \
   -e FLUTTER_VERSION \
   -e DART_VERSION \
   -e FLUTTER_ARCHIVE \
