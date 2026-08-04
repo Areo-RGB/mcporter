@@ -81,6 +81,7 @@ for project in offline_starter desktop_toolbox; do
   cd "/work/$project"
   flutter pub get --offline
   rm -rf build
+  mkdir -p build/native_assets/linux
   flutter build linux --release --no-pub
   printf '%s offline release build succeeded.\n' "$project"
 done | tee /out/OFFLINE_VERIFICATION.txt
