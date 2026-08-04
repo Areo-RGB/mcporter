@@ -71,9 +71,12 @@ flutter pub add file_selector path_provider shared_preferences url_launcher
 flutter pub get
 flutter build linux --release --no-pub
 
-# Prove both the basic and plugin-enabled projects build with network endpoints disabled.
-export PUB_HOSTED_URL="http://127.0.0.1:9"
+# Prove both projects resolve and build with no usable HTTP path.
 export FLUTTER_STORAGE_BASE_URL="http://127.0.0.1:9"
+export HTTP_PROXY="http://127.0.0.1:9"
+export HTTPS_PROXY="http://127.0.0.1:9"
+export http_proxy="$HTTP_PROXY"
+export https_proxy="$HTTPS_PROXY"
 for project in offline_starter desktop_toolbox; do
   cd "/work/$project"
   flutter pub get --offline
