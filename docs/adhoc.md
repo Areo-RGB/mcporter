@@ -34,7 +34,7 @@ Notice that the second command repeats the URL. Ad-hoc definitions are ephemeral
 ## Transport Detection
 
 - **HTTP(S)**: Providing a URL defaults to the streamable HTTP transport. `https://` works out of the box; `http://` requires `--allow-http` (or the hidden alias `--insecure`) to acknowledge cleartext traffic. The `--sse` flag is a hidden alias for `--http-url` to match older examples. Use repeatable `--header KEY=value` flags for private servers that require headers such as `Authorization`, `X-API-Key`, or tenant selectors.
-- **STDIO**: Supplying `--stdio` (with a command string) or `--stdio-bin` (binary + args) selects the stdio transport. Your current shell environment is inherited automatically; use `--env KEY=value` only when you need to inject/override specific variables (and `--cwd` to change directories).
+- **STDIO**: Supplying `--stdio` (a command string, optionally with repeatable `--stdio-arg <value>`) selects the stdio transport. Your current shell environment is inherited automatically; use `--env KEY=value` only when you need to inject/override specific variables (and `--cwd` to change directories).
 - **Conflict guard**: Passing both URL and stdio flags errors out so we don’t guess.
 
 ## Naming & Identity
