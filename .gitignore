@@ -30,3 +30,6 @@ coverage
 build
 out
 tmp
+exa
+*.exe
+firecrawl

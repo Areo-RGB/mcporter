@@ -34,9 +34,6 @@ function renderStandaloneHelp(): string {
 \t\tlines.push(formatEmbeddedTools());
 \t}
 \tlines.push('', formatGlobalFlags(), '', formatQuickStart());
-\tif (generatorInfo) {
-\t\tlines.push('', tint.extraDim(generatorInfo));
-\t}
 \treturn lines.join('\\n') + '\\n';
 }
 
